@@ -4,6 +4,7 @@
   #include <ESP8266WiFi.h>
 #endif
 #include <Firebase_ESP_Client.h>
+#include <WiFiManager.h>
 
 //Provide the token generation process info.
 #include "addons/TokenHelper.h"
@@ -11,6 +12,9 @@
 #include "addons/RTDBHelper.h"
 
 // Insert your network credentials
+#define WIFI_MANAGER // comment to disable wifimanager
+
+// Required if WIFI_MANAGER is disabled:
 #define WIFI_SSID "YOUR_NETWORK_NAME"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
@@ -99,17 +103,11 @@ void loop(){
 }
 
 void firebaseInit() {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.print("Connecting to Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED){
-    Serial.print(".");
-    delay(300);
-  }
-  Serial.println();
-  Serial.print("Connected with IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.println();
-
+  #ifdef WIFI_MANAGER
+    setupWifiManager();
+  #else
+    setupWifi();
+  #endif
   /* Assign the api key (required) */
   config.api_key = API_KEY;
 
@@ -131,6 +129,40 @@ void firebaseInit() {
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
 }
+
+#ifdef WIFI_MANAGER
+void setupWifiManager() {
+  WiFi.mode(WIFI_STA);
+  WiFiManager wm;
+//    wm.resetSettings();
+  bool res;
+    // res = wm.autoConnect(); // auto generated AP name from chipid
+    // res = wm.autoConnect("AutoConnectAP"); // anonymous ap
+    res = wm.autoConnect("NodeMCU",""); // password protected ap
+
+    if(!res) {
+        Serial.println("Failed to connect");
+        // ESP.restart();
+    } 
+    else {
+        //if you get here you have connected to the WiFi    
+        Serial.println("connected...yeey :)");
+    }
+}
+#else
+void setupWifi() {
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+}
+#endif
 
 void sendFirebaseData() {
   String targets[] = {"gyro/x", "gyro/y", "gyro/z"};
