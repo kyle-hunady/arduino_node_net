@@ -2,6 +2,18 @@
 #include "printf.h"
 #include "RF24.h"
 #include <EEPROM.h>
+#include "LowPower.h"
+
+//#define DEBUG // comment to remove print statements
+#ifdef DEBUG
+  #define DEBUG_PRINTLN(x)  Serial.println(x)
+  #define DEBUG_PRINT(x)    Serial.print(x)
+  #define DEBUG_BEGIN(x)    Serial.begin(x)
+#else 
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINT(x)
+  #define DEBUG_BEGIN(x)
+#endif
 
 #define CE_PIN 8
 #define CSN_PIN 7
@@ -14,10 +26,12 @@ uint8_t attempts;
 byte deviceID;
 
 void setup() {
-  Serial.begin(115200);
+  DEBUG_BEGIN(115200);
   getID();
   radioInit();
-  printRadioDetails();
+  #ifdef DEBUG
+    printRadioDetails();
+  #endif
 }
 
 void loop() {
@@ -25,7 +39,7 @@ void loop() {
   sendData();
   attempts++; 
 
-  delay(60000);  // slow transmissions down by 1 second
+  goToSleep(8);  // duration in seconds
 }
 
 String arrToStr(uint8_t arr[], int len) { 
@@ -40,16 +54,16 @@ String arrToStr(uint8_t arr[], int len) {
 }
 
 void getID() {
-  Serial.println("==================================================");
+  DEBUG_PRINTLN("==================================================");
   deviceID = EEPROM.read(0);
   data[0] = deviceID;
-  Serial.println("DEVICE ID: " + (String) deviceID);
-  Serial.println("==================================================");
+  DEBUG_PRINTLN("DEVICE ID: " + (String) deviceID);
+  DEBUG_PRINTLN("==================================================");
 }
 
 void radioInit() {
   if (!radio.begin()) {
-    Serial.println("radio hardware is not responding!!");
+    DEBUG_PRINTLN("radio hardware is not responding!!");
     while (1) {} // hold in infinite loop
   }
   radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default.
@@ -66,18 +80,27 @@ void printRadioDetails() {
 }
 
 void sendData() {
-  Serial.print("Sending: " + arrToStr(data,sizeof(data)));
-  Serial.print("...");
+  DEBUG_PRINT("Sending: " + arrToStr(data,sizeof(data)));
+  DEBUG_PRINT("...");
   
   unsigned long start_timer = micros();                    // start the timer
   bool report = radio.write(&data, sizeof(data));      // transmit & save the report
   unsigned long end_timer = micros();                      // end the timer
 
   if (report) {
-    Serial.print("OK! (");
-    Serial.print(end_timer - start_timer);  
-    Serial.println("us)");
+    DEBUG_PRINT("OK! (");
+    DEBUG_PRINT(end_timer - start_timer);  
+    DEBUG_PRINTLN("us)");
   } else {
-    Serial.println("failed"); // data was not delivered
+    DEBUG_PRINTLN("failed"); // data was not delivered
   }
+}
+
+void goToSleep(int duration) {
+  radio.powerDown();
+  int cycles = duration / 8;
+  for (int i = 0; i < cycles; i++) {
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);  
+  }
+  radio.powerUp();
 }
