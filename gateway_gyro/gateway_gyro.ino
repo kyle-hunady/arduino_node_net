@@ -11,14 +11,14 @@
 #include "addons/RTDBHelper.h"
 
 // Insert your network credentials
-#define WIFI_SSID "CenturyLink1458-5G"
-#define WIFI_PASSWORD "monstera99"
+#define WIFI_SSID "YOUR_NETWORK_NAME"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
 // Insert Firebase project API Key
-#define API_KEY "AIzaSyCWrhHwOJ7UyACu8K_kLci2-5zdfVRGHbE"
+#define API_KEY "YOUR_API_KEY"
 
 // Insert RTDB URLefine the RTDB URL */
-#define DATABASE_URL "https://node-net-default-rtdb.firebaseio.com/" 
+#define DATABASE_URL "YOUR_REALTIME_DATABASE_URL" 
 
 //Define Firebase Data object
 FirebaseData fbdo;
